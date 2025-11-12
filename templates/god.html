@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>God Bot Control</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --accent: #ff3355; --accent-glow: rgba(255, 51, 85, 0.4); 
+            --primary: #00bfff; --primary-glow: rgba(0, 191, 255, 0.4);
+            --secondary: #7e22ce; --secondary-glow: rgba(126, 34, 206, 0.4);
+            --bg: #0a0a16; --surface: #151528; --surface-light: #1f1f38;
+            --border: #2a2a4a; --text: #e0e0ff; --text-dim: #a0a0cc;
+            --success: #00ff88; --warning: #ffaa00; --danger: #ff3355;
+            --success-glow: rgba(0, 255, 136, 0.3); --warning-glow: rgba(255, 170, 0, 0.3);
+        }
+        html, body { height: 100%; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: radial-gradient(ellipse at center, #0a0a16 0%, #050510 100%);
+            color: var(--text); 
+            padding: 20px;
+            font-size: 16px;
+            overflow-x: hidden;
+        }
+        .container { 
+            max-width: 95%; 
+            margin: 0 auto; 
+            display: flex; 
+            flex-direction: column; 
+            height: 100%; 
+        }
+        header { 
+            text-align: center; 
+            padding: 25px 0; 
+            margin-bottom: 20px; 
+            flex-shrink: 0; 
+            position: relative;
+        }
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, var(--primary-glow), transparent);
+            border-radius: 10px;
+            filter: blur(10px);
+            z-index: -1;
+        }
+        h1 { 
+            font-size: 36px; 
+            font-weight: 800; 
+            background: linear-gradient(135deg, var(--primary), #a855f7); 
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+            letter-spacing: 2px; 
+            text-shadow: 0 0 20px var(--primary-glow);
+            position: relative;
+            display: inline-block;
+        }
+        h1::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
+            border-radius: 3px;
+        }
+        .grid { 
+            display: grid; 
+            grid-template-columns: 1fr 380px; 
+            gap: 20px; 
+            height: 100%;             
+            min-height: 0;
+        }
+        @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+        .main-panel { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 20px; 
+            min-height: 0;
+            height: 100%;         
+        }
+        .card { 
+            background: linear-gradient(145deg, var(--surface), #1a1a2e); 
+            border: 1px solid var(--border); 
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); 
+            display: flex; 
+            flex-direction: column; 
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
+        }
+        .card:hover {
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 191, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        .card.scrollable { flex-grow: 1; min-height: 0; }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-shrink: 0;         
+        }
+        .card-title { 
+            font-size: 16px;
+            font-weight: 700; 
+            color: var(--primary); 
+            margin-bottom: 0;             
+            text-transform: uppercase; 
+            letter-spacing: 1px; 
+            display: flex; 
+            align-items: center; 
+            gap: 10px;
+            text-shadow: 0 0 10px var(--primary-glow);
+        }
+        .card-title::before { 
+            content: ''; 
+            width: 4px;
+            height: 18px;
+            background: var(--primary); 
+            border-radius: 2px; 
+            box-shadow: 0 0 8px var(--primary);
+        }
+        .flash { 
+            padding: 12px 18px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            animation: slideIn 0.3s ease; 
+            border-left: 4px solid;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .flash-success { 
+            background: rgba(0, 255, 136, 0.1); 
+            border-left-color: var(--success); 
+            color: var(--success); 
+            box-shadow: 0 4px 12px var(--success-glow);
+        }
+        .flash-danger { 
+            background: rgba(255, 51, 85, 0.1); 
+            border-left-color: var(--danger); 
+            color: var(--danger); 
+            box-shadow: 0 4px 12px var(--accent-glow);
+        }
+        input[type="text"], 
+        input[type="number"] { 
+            width: 100%; 
+            background: var(--surface-light); 
+            border: 1px solid var(--border); 
+            border-radius: 10px; 
+            padding: 12px 16px; 
+            color: var(--text); 
+            font-size: 14px;
+            transition: all 0.2s; 
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: textfield;
+        }
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input:focus { 
+            outline: none; 
+            border-color: var(--primary); 
+            box-shadow: 0 0 0 3px var(--primary-glow); 
+        }
+        label { 
+            display: block; 
+            font-size: 12px;
+            color: var(--text-dim); 
+            margin-bottom: 6px;
+            text-transform: uppercase; 
+            letter-spacing: 0.5px; 
+        }
+        .input-group { margin-bottom: 15px; }
+        button { 
+            background: var(--accent); 
+            color: white; 
+            border: none; 
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 700; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px; 
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 15px var(--accent-glow);
+        }
+        button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: all 0.4s;
+        }
+        button:hover::before {
+            left: 100%;
+        }
+        button:hover { 
+            transform: translateY(-3px); 
+            box-shadow: 0 6px 20px var(--accent-glow); 
+        }
+        button:active { transform: translateY(0); }
+        .btn-cyan { 
+            background: var(--primary); 
+            box-shadow: 0 4px 15px var(--primary-glow);
+        }
+        .btn-success { 
+            background: var(--success); 
+            color: #000; 
+            box-shadow: 0 4px 15px var(--success-glow);
+        }
+        .btn-danger { 
+            background: var(--danger); 
+            box-shadow: 0 4px 15px var(--accent-glow);
+        }
+        .btn-sm { 
+            padding: 8px 14px;
+            font-size: 12px;
+        }
+        .uid-row { 
+            display: grid; 
+            grid-template-columns: 30px 1fr auto auto;
+            gap: 12px;
+            align-items: center; 
+            padding: 12px;
+            background: var(--surface-light); 
+            border: 1px solid var(--border); 
+            border-radius: 10px;
+            margin-bottom: 10px;
+            transition: all 0.2s; 
+        }
+        .uid-row:hover { 
+            border-color: var(--primary); 
+            box-shadow: 0 0 15px var(--primary-glow); 
+        }
+        .uid-row input[type="checkbox"] { 
+            width: 20px;
+            height: 20px;
+            accent-color: var(--primary); 
+            cursor: pointer; 
+        }
+        .uid-row input[type="number"] { margin: 0; padding: 8px 12px; font-size: 14px; }
+        .emote-badge { 
+            display: flex; 
+            align-items: center; 
+            gap: 8px;
+            padding: 6px 10px;
+            background: var(--surface); 
+            border: 1px solid var(--border); 
+            border-radius: 8px; 
+            font-size: 12px;
+            min-width: 140px;
+        }
+        .emote-badge img { width: 28px; height: 28px; border-radius: 4px; }
+        .emote-badge.empty { color: var(--text-dim); font-style: italic; }
+        .uid-actions { display: flex; gap: 6px; }
+        .btn-icon { 
+            width: 32px;
+            height: 32px;
+            padding: 0; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 18px;
+            background: transparent; 
+            border: 1px solid var(--border); 
+            color: var(--text-dim); 
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        .btn-icon:hover { 
+            border-color: var(--primary); 
+            color: var(--primary); 
+            box-shadow: 0 0 10px var(--primary-glow);
+        }
+        #uid-container { overflow-y: auto; padding-right: 8px; }
+        
+        .emote-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); 
+            gap: 12px; 
+            overflow-y: auto;             
+            padding: 10px; 
+            background: var(--surface-light); 
+            border-radius: 12px; 
+            border: 1px solid var(--border); 
+            flex-grow: 1; 
+            min-height: 0;
+            height: 100%;         
+        }
+        .emote-grid::-webkit-scrollbar { width: 8px; } 
+        .emote-grid::-webkit-scrollbar-track { background: var(--surface); } 
+        .emote-grid::-webkit-scrollbar-thumb { 
+            background: var(--border); 
+            border-radius: 4px; 
+        }
+        .emote-grid::-webkit-scrollbar-thumb:hover { 
+            background: var(--primary); 
+        }
+        .emote-item { 
+            background: var(--surface); 
+            border: 2px solid transparent; 
+            border-radius: 12px;
+            padding: 10px;
+            text-align: center; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+            position: relative; 
+        }
+        .emote-item:hover { 
+            transform: scale(1.05); 
+            border-color: var(--primary); 
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+        .emote-item.selected { 
+            border-color: var(--accent); 
+            box-shadow: 0 0 20px var(--accent-glow); 
+            transform: scale(1.08); 
+        }
+        .emote-item.selected::after { 
+            content: '✓'; 
+            position: absolute; 
+            top: 4px; 
+            right: 4px; 
+            width: 20px; 
+            height: 20px; 
+            background: var(--accent); 
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 14px; 
+            font-weight: bold; 
+            box-shadow: 0 0 8px var(--accent-glow);
+        }
+        .emote-item img { 
+            width: 56px;
+            height: 56px;
+            object-fit: contain; 
+            margin-bottom: 6px;
+            pointer-events: none; 
+        }
+        .emote-item .emote-details { 
+            font-size: 11px;
+            color: var(--text-dim); 
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+            pointer-events: none; 
+        }
+        .emote-item .emote-name { font-weight: bold; color: var(--text); }
+        .emote-item .emote-id { display: none; }
+        
+        .card-actions { 
+            display: flex; 
+            gap: 12px;
+        }
+        .quick-actions { display: flex; flex-direction: column; gap: 10px; }
+        .stat-row { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border); 
+            font-size: 14px;
+        }
+        .stat-row:last-child { border-bottom: none; } 
+        .stat-label { color: var(--text-dim); } 
+        .stat-value { 
+            color: var(--primary); 
+            font-weight: 700; 
+            text-shadow: 0 0 8px var(--primary-glow);
+        }
+        
+        /* New decorative elements */
+        .glow-effect {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            background: radial-gradient(circle at 50% 0%, var(--primary-glow), transparent 70%);
+            opacity: 0.1;
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        .sidebar .card {
+            background: linear-gradient(145deg, var(--surface), #1a1a2e);
+        }
+        
+        /* Responsive improvements */
+        @media (max-width: 768px) {
+            .uid-row {
+                grid-template-columns: 25px 1fr;
+                grid-template-areas: 
+                    "checkbox uid"
+                    "badge actions";
+                gap: 8px;
+            }
+            .uid-row input[type="checkbox"] {
+                grid-area: checkbox;
+            }
+            .uid-row input[type="number"] {
+                grid-area: uid;
+            }
+            .uid-row .emote-badge {
+                grid-area: badge;
+            }
+            .uid-row .uid-actions {
+                grid-area: actions;
+                justify-self: end;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="glow-effect"></div>
+    <div class="container">
+        <header><h1>⚡ GOD BOT CONTROL</h1></header>
+        
+        <!-- Flash messages section -->
+        <div id="flash-messages"></div>
+        
+        <form id="main-form" action="/action" method="post" style="flex-grow: 1; min-height: 0;">
+            <input type="hidden" name="action" id="form_action">
+            <input type="hidden" name="payload" id="form_payload">
+            <div class="grid">
+                <div class="main-panel">
+                    <div class="card">
+                        <div class="card-title">Target Management</div>
+                        <div id="uid-container"></div>
+                        <button type="button" id="add-uid-btn" class="btn-success btn-sm" style="margin-top: 10px; flex-shrink: 0;">+ Add Target</button>
+                    </div>
+                    
+                    <div class="card scrollable">
+                        <div class="card-header">
+                            <div class="card-title">😎 Emote Palette</div>
+                            <div class="card-actions">
+                                <button type="button" id="send-selected" class="btn-cyan btn-sm">Send to Checked</button>
+                                <button type="button" id="send-all" class="btn-sm">Send All Assigned</button>
+                            </div>
+                        </div>
+
+                        <div class="emote-grid" id="emote-grid">
+                            <!-- Emote items will be dynamically loaded here -->
+                        </div>
+                    </div>
+                </div>
+                <div class="sidebar">
+                    <div class="card">
+                        <div class="card-title">Settings</div>
+                        <div class="input-group"><label>Main Account UID</label><input type="number" id="main_player_uid" placeholder="Your UID"></div>
+                        <div class="input-group"><label>Team Code</label><input type="text" id="team_code" placeholder="Squad code"></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">Quick Actions</div>
+                        <div class="quick-actions">
+                            <button type="button" id="join-squad" class="btn-cyan">Join Squad</button>
+                            <button type="button" id="quick-invite" class="btn-success">Create 5 player Invite</button>
+                            <button type="button" id="leave-squad" class="btn-danger">Leave Squad</button>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">Status</div>
+                        <div class="stat-row"><span class="stat-label">Targets</span><span class="stat-value" id="stat-targets">0</span></div>
+                        <div class="stat-row"><span class="stat-label">Assigned</span><span class="stat-value" id="stat-assigned">0</span></div>
+                        <div class="stat-row"><span class="stat-label">Selected</span><span class="stat-value" id="stat-selected">None</span></div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const state = { selectedEmote: null };
+            const els = {
+                mainUid: document.getElementById('main_player_uid'), 
+                teamCode: document.getElementById('team_code'),
+                uidContainer: document.getElementById('uid-container'), 
+                emoteGrid: document.getElementById('emote-grid'),
+                form: document.getElementById('main-form'), 
+                formAction: document.getElementById('form_action'),
+                formPayload: document.getElementById('form_payload'),
+                flashMessages: document.getElementById('flash-messages')
+            };
+
+            // Sample emote data - in a real app, this would come from the server
+            const emoteData = [
+                { id: '909000075', name: 'MP40 MAX', img: 'placeholder.png' },
+                { id: '909000063', name: 'AK47 MAX', img: 'placeholder.png' },
+                { id: '909035007', name: 'M1887 MAX', img: 'placeholder.png' },
+                { id: '909000068', name: 'SCAR MAX', img: 'placeholder.png' },
+                { id: '909000085', name: 'XM8 MAX', img: 'placeholder.png' },
+                { id: '909038012', name: 'G18 MAX', img: 'placeholder.png' },
+                { id: '909035012', name: 'AN94 MAX', img: 'placeholder.png' },
+                { id: '909033002', name: 'MP5 MAX', img: 'placeholder.png' },
+                { id: '909051003', name: 'M60 MAX', img: 'placeholder.png' },
+                { id: '909037011', name: 'FIST MAX', img: 'placeholder.png' },
+                { id: '909000081', name: 'M1014 GMAX', img: 'placeholder.png' },
+                { id: '909039011', name: 'M1014 RMAX', img: 'placeholder.png' },
+                { id: '909000090', name: 'Famas Max', img: 'placeholder.png' },
+                { id: '909049010', name: 'P90 Max', img: 'placeholder.png' },
+                { id: '909038010', name: 'Thompson Max', img: 'placeholder.png' },
+                { id: '909033001', name: 'M4A1 Max', img: 'placeholder.png' },
+                { id: '909000098', name: 'UMP Max', img: 'placeholder.png' },
+                { id: '909040010', name: 'New M40 Max', img: 'placeholder.png' },
+                { id: '909045001', name: 'Parafal Max', img: 'placeholder.png' },
+                { id: '909042008', name: 'WD Picker Max', img: 'placeholder.png' },
+                { id: '909049012', name: 'Open Fire', img: 'placeholder.png' },
+                { id: '909000002', name: 'LOL', img: 'placeholder.png' },
+                { id: '909042007', name: '"100" Gloo Sculpture', img: 'placeholder.png' },
+                { id: '909000012', name: 'Push Up', img: 'placeholder.png' }
+            ];
+
+            // Initialize emote grid
+            function initializeEmoteGrid() {
+                els.emoteGrid.innerHTML = '';
+                emoteData.forEach(emote => {
+                    const emoteItem = document.createElement('div');
+                    emoteItem.className = 'emote-item';
+                    emoteItem.innerHTML = `
+                        <img src="${emote.img}" alt="${emote.name}" class="lazy-emote-image">
+                        <div class="emote-details">
+                            <p class="emote-name">${emote.name}</p>
+                            <p class="emote-id">ID: ${emote.id}</p>
+                        </div>
+                    `;
+                    els.emoteGrid.appendChild(emoteItem);
+                });
+            }
+
+            // Flash message function
+            function showFlashMessage(message, type = 'success') {
+                const flash = document.createElement('div');
+                flash.className = `flash flash-${type}`;
+                flash.textContent = message;
+                els.flashMessages.appendChild(flash);
+                
+                // Auto remove after 5 seconds
+                setTimeout(() => {
+                    flash.remove();
+                }, 5000);
+            }
+
+            function updateStats() {
+                const rows = els.uidContainer.querySelectorAll('.uid-row');
+                const assigned = Array.from(rows).filter(r => r.dataset.emoteId).length;
+                document.getElementById('stat-targets').textContent = rows.length;
+                document.getElementById('stat-assigned').textContent = assigned;
+                document.getElementById('stat-selected').textContent = state.selectedEmote ? state.selectedEmote.name : 'None';
+            }
+
+            function updateEmoteBadge(row, emoteData) {
+                const badge = row.querySelector('.emote-badge');
+                if (emoteData && emoteData.id) {
+                    row.dataset.emoteId = emoteData.id;
+                    row.dataset.emoteName = emoteData.name;
+                    row.dataset.emoteImg = emoteData.img;
+                    badge.classList.remove('empty');
+                    badge.querySelector('img').src = emoteData.img;
+                    badge.querySelector('img').style.display = 'block';
+                    badge.querySelector('span').textContent = emoteData.name;
+                } else {
+                    delete row.dataset.emoteId; 
+                    delete row.dataset.emoteName; 
+                    delete row.dataset.emoteImg;
+                    badge.classList.add('empty');
+                    badge.querySelector('img').style.display = 'none';
+                    badge.querySelector('span').textContent = 'None';
+                }
+            }
+
+            function createUidRow(targetData = {}, isMain = false) {
+                const div = document.createElement('div');
+                div.className = 'uid-row';
+                div.innerHTML = `
+                    <input type="checkbox" checked>
+                    <input type="number" placeholder="${isMain ? 'Main UID' : 'Target UID'}" value="${targetData.uid || ''}" ${isMain ? 'readonly' : ''}>
+                    <div class="emote-badge empty"><img src="" style="display:none"><span>None</span></div>
+                    <div class="uid-actions">
+                        <button type="button" class="btn-icon btn-sm" title="Assign" data-action="assign">📌</button>
+                        <button type="button" class="btn-icon btn-sm" title="Clear" data-action="clear">✕</button>
+                        <button type="button" class="btn-icon btn-sm btn-success" title="Send" data-action="send">➤</button>
+                        ${!isMain ? '<button type="button" class="btn-icon btn-sm btn-danger" data-action="remove">🗑</button>' : ''}
+                    </div>`;
+                els.uidContainer.appendChild(div);
+                if (targetData.emoteId) {
+                    updateEmoteBadge(div, { id: targetData.emoteId, name: targetData.emoteName, img: targetData.emoteImg });
+                }
+                updateStats();
+                return div;
+            }
+
+            function saveData() {
+                localStorage.setItem('God_main_uid', els.mainUid.value);
+                localStorage.setItem('God_team_code', els.teamCode.value);
+                const targets = [];
+                els.uidContainer.querySelectorAll('.uid-row').forEach(row => {
+                    const uidInput = row.querySelector('input[type="number"]');
+                    const target = { uid: uidInput.value };
+                    if (row.dataset.emoteId) {
+                        target.emoteId = row.dataset.emoteId;
+                        target.emoteName = row.dataset.emoteName;
+                        target.emoteImg = row.dataset.emoteImg;
+                    }
+                    if (uidInput.readOnly) {
+                        target.isMain = true;
+                    }
+                    targets.push(target);
+                });
+                localStorage.setItem('God_targets', JSON.stringify(targets));
+            }
+
+            function loadData() {
+                els.mainUid.value = localStorage.getItem('God_main_uid') || '';
+                els.teamCode.value = localStorage.getItem('God_team_code') || '';
+                const targets = JSON.parse(localStorage.getItem('God_targets') || '[]');
+                els.uidContainer.innerHTML = '';
+                if (targets.length === 0) {
+                    createUidRow({ uid: els.mainUid.value }, true);
+                } else {
+                    targets.forEach(t => createUidRow(t, t.isMain));
+                }
+                updateStats();
+            }
+
+            function submitForm(action, payload) {
+                els.formAction.value = action;
+                els.formPayload.value = JSON.stringify(payload);
+                
+                // Show a flash message for the action
+                let message = '';
+                switch(action) {
+                    case 'emote_batch':
+                        message = `Sending ${payload.length} emote assignments`;
+                        break;
+                    case 'emote':
+                        message = `Sending emote to ${payload.player_ids.length} targets`;
+                        break;
+                    case 'join_squad':
+                        message = 'Joining squad';
+                        break;
+                    case 'quick_invite':
+                        message = 'Creating 5 player invite';
+                        break;
+                    case 'leave_squad':
+                        message = 'Leaving squad';
+                        break;
+                    default:
+                        message = 'Processing request';
+                }
+                showFlashMessage(message, 'success');
+                
+                // In a real app, this would submit the form
+                // For demo purposes, we'll just log and show a success message
+                console.log('Form submitted:', { action, payload });
+                setTimeout(() => {
+                    showFlashMessage(`${action} completed successfully`, 'success');
+                }, 1000);
+                
+                // Uncomment the next line to actually submit the form
+                // els.form.submit();
+            }
+
+            // Event listeners
+            els.mainUid.addEventListener('input', () => {
+                const mainRowInput = els.uidContainer.querySelector('.uid-row input[readonly]');
+                if (mainRowInput) mainRowInput.value = els.mainUid.value;
+                saveData();
+            });
+            els.teamCode.addEventListener('input', saveData);
+
+            document.getElementById('add-uid-btn').addEventListener('click', () => {
+                if (els.uidContainer.children.length >= 5) { 
+                    showFlashMessage('Maximum 5 targets allowed', 'danger');
+                    return; 
+                }
+                createUidRow({}, false);
+                saveData();
+            });
+
+            els.emoteGrid.addEventListener('click', e => {
+                const card = e.target.closest('.emote-item');
+                if (!card) return;
+
+                const name = card.querySelector('.emote-name').textContent;
+                const idText = card.querySelector('.emote-id').textContent;
+                const id = idText.replace('ID: ', '').trim();
+                const img = card.querySelector('img').src;
+
+                state.selectedEmote = { id: id, name: name, img: img };
+
+                els.emoteGrid.querySelectorAll('.emote-item').forEach(c => c.classList.remove('selected'));
+                card.classList.add('selected');
+                updateStats();
+                
+                showFlashMessage(`Selected emote: ${name}`, 'success');
+            });
+
+            els.uidContainer.addEventListener('input', e => { 
+                if (e.target.matches('input[type="number"]')) saveData(); 
+            });
+            
+            els.uidContainer.addEventListener('click', e => {
+                const btn = e.target.closest('button[data-action]');
+                if (!btn) return;
+                const row = btn.closest('.uid-row');
+                const action = btn.dataset.action;
+
+                if (action === 'assign') {
+                    if (!state.selectedEmote) { 
+                        showFlashMessage('Select an emote from the palette first', 'danger'); 
+                        return; 
+                    }
+                    updateEmoteBadge(row, state.selectedEmote);
+                    showFlashMessage(`Assigned ${state.selectedEmote.name} to target`, 'success');
+                } else if (action === 'clear') {
+                    updateEmoteBadge(row, null);
+                    showFlashMessage('Emote assignment cleared', 'success');
+                } else if (action === 'send') {
+                    const uid = row.querySelector('input[type="number"]').value;
+                    const emoteId = row.dataset.emoteId;
+                    if (!uid || !emoteId) { 
+                        showFlashMessage('A UID must be entered and an emote must be assigned', 'danger'); 
+                        return; 
+                    }
+                    submitForm('emote_batch', [{ player_id: parseInt(uid), emote_id: parseInt(emoteId) }]);
+                } else if (action === 'remove') {
+                    row.remove();
+                    showFlashMessage('Target removed', 'success');
+                }
+                saveData(); 
+                updateStats();
+            });
+
+            document.getElementById('send-selected').addEventListener('click', () => {
+                if (!state.selectedEmote) { 
+                    showFlashMessage('Select an emote from the palette first', 'danger'); 
+                    return; 
+                }
+                const checked = Array.from(els.uidContainer.querySelectorAll('input[type="checkbox"]:checked'))
+                    .map(cb => cb.closest('.uid-row').querySelector('input[type="number"]').value).filter(Boolean);
+                if (checked.length === 0) { 
+                    showFlashMessage('Check at least one target with a valid UID', 'danger'); 
+                    return; 
+                }
+                submitForm('emote', { emote_id: parseInt(state.selectedEmote.id), player_ids: checked.map(uid => parseInt(uid)) });
+            });
+
+            document.getElementById('send-all').addEventListener('click', () => {
+                const payload = [];
+                els.uidContainer.querySelectorAll('.uid-row').forEach(row => {
+                    if (row.dataset.emoteId) {
+                        const uid = row.querySelector('input[type="number"]').value;
+                        if (uid) payload.push({ player_id: parseInt(uid), emote_id: parseInt(row.dataset.emoteId) });
+                    }
+                });
+                if (payload.length === 0) { 
+                    showFlashMessage('No assigned emotes to send', 'danger'); 
+                    return; 
+                }
+                submitForm('emote_batch', payload);
+            });
+
+            document.getElementById('join-squad').addEventListener('click', () => {
+                if (!els.teamCode.value) { 
+                    showFlashMessage('Enter a team code first', 'danger'); 
+                    return; 
+                }
+                submitForm('join_squad', { team_code: els.teamCode.value });
+            });
+            
+            document.getElementById('quick-invite').addEventListener('click', () => {
+                if (!els.mainUid.value) { 
+                    showFlashMessage('Enter your main account UID first', 'danger'); 
+                    return; 
+                }
+                submitForm('quick_invite', { player_id: parseInt(els.mainUid.value) });
+            });
+            
+            document.getElementById('leave-squad').addEventListener('click', () => {
+                if (confirm('Are you sure you want the bot to leave its current squad?')) {
+                    submitForm('leave_squad', {});
+                }
+            });
+
+            // Initialize the application
+            initializeEmoteGrid();
+            loadData();
+            
+            // Show welcome message
+            setTimeout(() => {
+                showFlashMessage('God Bot Control initialized successfully', 'success');
+            }, 500);
+        });
+    </script>
+</body>
+</html>
